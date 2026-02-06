@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   try {
     // CORS básico (Guide)
     const origin = req.headers.origin || "";
-    const allowed = ["https://suporte.golfleet.com.br"]; // ajuste se precisar
+    const allowed = ["https://suporte.golfleet.com.br"]; 
 
     if (origin && allowed.includes(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
@@ -27,14 +27,14 @@ export default async function handler(req, res) {
 
     const USER_FIELD_KEY = "integration_token";
 
-    // ✅ TROCA IMPORTANTE: usa HTTPS
+
     const WEBHOOK_URL =
       "https://zendesk.golfleet.com.br/integration/vehicles?organizationId=123";
 
     const basic = Buffer.from(`${ZENDESK_EMAIL}/token:${ZENDESK_API_TOKEN}`).toString("base64");
     const zendeskHeaders = { Authorization: `Basic ${basic}`, Accept: "application/json" };
 
-    // 1) Search user by email
+ 
     const searchUrl = `https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/users/search.json?query=${encodeURIComponent(email)}`;
     const r1 = await fetch(searchUrl, { headers: zendeskHeaders });
 
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     const user = users[0];
     if (!user) return res.status(404).json({ error: "user_not_found", email });
 
-    // 2) Load user to read user_fields
+
     const userUrl = `https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/users/${user.id}.json`;
     const r2 = await fetch(userUrl, { headers: zendeskHeaders });
 
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "integration_token_missing", zendeskUserId: user.id, email });
     }
 
-    // ✅ FIX: trim no token
+ 
     const tokenToUse = String(rawToken).trim();
 
     const debugInfo = {
@@ -75,20 +75,18 @@ export default async function handler(req, res) {
       looksLikeJwt: tokenToUse.split(".").length === 3
     };
 
-    // 3) Call webhook
-    // ✅ FIX: redirect manual para ver se tem 301/302 e pra onde
+
     const r3 = await fetch(WEBHOOK_URL, {
       method: "GET",
       redirect: "manual",
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${tokenToUse}`,
-        // opcional, às vezes ajuda em backend mais chato:
         "User-Agent": "golfleet-middleware/1.0"
       }
     });
 
-    // Se tiver redirect, mostra no debug
+
     if (r3.status >= 300 && r3.status < 400) {
       return res.status(502).json({
         error: "webhook_redirected",
